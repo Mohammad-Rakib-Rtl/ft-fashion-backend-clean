@@ -17,6 +17,9 @@ import os
 import requests
 from tempfile import NamedTemporaryFile
 from django.http import HttpResponse
+import requests
+import tempfile
+
 
 
 # ---- function begins here ----
@@ -99,21 +102,18 @@ def checkout(request):
 
             if item.product.image:
                 try:
-                    image_url = request.build_absolute_uri(item.product.image.url)
-
+                    image_url = item.product.image.url
                     response = requests.get(image_url, timeout=5)
-                    if response.status_code == 200:
-                        temp_img = NamedTemporaryFile(delete=False, suffix=".jpg")
-                        temp_img.write(response.content)
-                        temp_img.close()
 
-                        img = Image(
-                            temp_img.name,
-                            width=0.7 * inch,
-                            height=0.7 * inch
-                        )
+                    if response.status_code == 200:
+                        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                        tmp.write(response.content)
+                        tmp.close()
+
+                        img = Image(tmp.name, width=0.7*inch, height=0.7*inch)
                 except Exception as e:
                     print("IMAGE LOAD ERROR:", e)
+
 
 
             # img = Paragraph("-", styles["Normal"])
