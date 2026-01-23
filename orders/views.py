@@ -14,8 +14,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, Image
 from reportlab.lib.units import inch
 import os
-
-
+import requests
+from tempfile import NamedTemporaryFile
 from django.http import HttpResponse
 
 
@@ -95,13 +95,28 @@ def checkout(request):
             subtotal = item.product.price * item.quantity
 
             # Product image cell
-            # image_path = item.product.image.path if item.product.image else None
-            # if image_path and os.path.exists(image_path):
-            #     img = Image(image_path, width=0.7*inch, height=0.7*inch)
-            # else:
-            #     img = Paragraph("-", styles["Normal"])
-
             img = Paragraph("-", styles["Normal"])
+
+            if item.product.image:
+                try:
+                    image_url = request.build_absolute_uri(item.product.image.url)
+
+                    response = requests.get(image_url, timeout=5)
+                    if response.status_code == 200:
+                        temp_img = NamedTemporaryFile(delete=False, suffix=".jpg")
+                        temp_img.write(response.content)
+                        temp_img.close()
+
+                        img = Image(
+                            temp_img.name,
+                            width=0.7 * inch,
+                            height=0.7 * inch
+                        )
+                except Exception as e:
+                    print("IMAGE LOAD ERROR:", e)
+
+
+            # img = Paragraph("-", styles["Normal"])
 
 
             # Product name with word wrapping
