@@ -20,6 +20,11 @@ from django.http import HttpResponse
 import requests
 import tempfile
 
+from urllib.request import urlopen
+from io import BytesIO
+from reportlab.platypus import Image
+from reportlab.lib.units import inch
+
 
 
 # ---- function begins here ----
@@ -97,22 +102,17 @@ def checkout(request):
         for item in order.items.all():
             subtotal = item.product.price * item.quantity
 
-            # Product image cell
-            img = Paragraph("-", styles["Normal"])
+            # --- Product image (Cloudinary-safe) ---
+        img = Paragraph("-", styles["Normal"])
 
-            if item.product.image:
-                try:
-                    image_url = item.product.image.url
-                    response = requests.get(image_url, timeout=5)
-
-                    if response.status_code == 200:
-                        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-                        tmp.write(response.content)
-                        tmp.close()
-
-                        img = Image(tmp.name, width=0.7*inch, height=0.7*inch)
-                except Exception as e:
-                    print("IMAGE LOAD ERROR:", e)
+        if item.product.image:
+            try:
+                image_url = item.product.image.url  # ✅ Cloudinary URL
+                image_data = urlopen(image_url, timeout=5).read()
+                image_buffer = BytesIO(image_data)
+                img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
+            except Exception as e:
+                print("IMAGE LOAD ERROR:", e)
 
 
 
@@ -127,9 +127,20 @@ def checkout(request):
 
             product_name = Paragraph(product_name_text, product_name_style)
 
+            # data.append([
+            #     str(serial_no),
+            #     img,
+            #     item.product.code or "-",
+            #     product_name,
+            #     item.size or "-",
+            #     str(item.quantity),
+            #     f"{item.product.price:.2f}",
+            #     f"{subtotal:.2f}"
+            # ])
+
             data.append([
                 str(serial_no),
-                img,
+                img,                                # ✅ image cell
                 item.product.code or "-",
                 product_name,
                 item.size or "-",
@@ -138,12 +149,14 @@ def checkout(request):
                 f"{subtotal:.2f}"
             ])
 
+
             total += subtotal
             serial_no += 1
 
 
         # --- Add Total Row ---
         data.append(["", "", "", "", "", "", "Total:", f"{total:.2f} BDT"])
+        
 
         # --- Table Style ---
         table = Table(data, colWidths=[30, 60, 60, 150, 40, 40, 80, 80])
