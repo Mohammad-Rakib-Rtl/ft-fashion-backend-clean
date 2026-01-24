@@ -102,12 +102,24 @@ def checkout(request):
         for item in order.items.all():
             subtotal = item.product.price * item.quantity
 
-            # Product image cell
-            image_path = item.product.image.path if item.product.image else None
-            if image_path and os.path.exists(image_path):
-                img = Image(image_path, width=0.7*inch, height=0.7*inch)
-            else:
-                img = Paragraph("-", styles["Normal"])
+            img = Paragraph("-", styles["Normal"])
+
+            if item.product.image:
+                try:
+                    image_url = item.product.image.url
+
+                    # Make URL absolute (Railway-safe)
+                    if image_url.startswith("/"):
+                        image_url = request.build_absolute_uri(image_url)
+
+                    image_data = urlopen(image_url, timeout=10).read()
+                    image_buffer = BytesIO(image_data)
+
+                    img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
+
+                except Exception as e:
+                    print("IMAGE LOAD ERROR:", e)
+
 
 
             product_name_text = item.product.name
