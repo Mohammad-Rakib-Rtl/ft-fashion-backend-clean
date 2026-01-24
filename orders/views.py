@@ -102,45 +102,37 @@ def checkout(request):
         for item in order.items.all():
             subtotal = item.product.price * item.quantity
 
-            # --- Product image (Cloudinary-safe) ---
-        img = Paragraph("-", styles["Normal"])
+            # ---------- FIXED IMAGE LOGIC ----------
+            img = Paragraph("-", styles["Normal"])
 
-        if item.product.image:
-            try:
-                image_url = item.product.image.url  # ✅ Cloudinary URL
-                image_data = urlopen(image_url, timeout=5).read()
-                image_buffer = BytesIO(image_data)
-                img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
-            except Exception as e:
-                print("IMAGE LOAD ERROR:", e)
+            if item.product.image:
+                try:
+                    image_url = item.product.image.url
 
+                    # Handle local /media/ URLs safely
+                    if image_url.startswith("/media/"):
+                        image_path = os.path.join(settings.MEDIA_ROOT, image_url.replace("/media/products", ""))
+                        if os.path.exists(image_path):
+                            img = Image(image_path, width=0.7 * inch, height=0.7 * inch)
+                    else:
+                        # External URL (future-proof)
+                        image_data = urlopen(image_url, timeout=5).read()
+                        image_buffer = BytesIO(image_data)
+                        img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
 
+                except Exception as e:
+                    print("IMAGE LOAD ERROR:", e)
+            # ---------- END IMAGE LOGIC ----------
 
-            # img = Paragraph("-", styles["Normal"])
-
-
-            # Product name with word wrapping
             product_name_text = item.product.name
-            # Optional: truncate if name is too long (e.g., >60 chars)
             if len(product_name_text) > 60:
                 product_name_text = product_name_text[:57] + "..."
 
             product_name = Paragraph(product_name_text, product_name_style)
 
-            # data.append([
-            #     str(serial_no),
-            #     img,
-            #     item.product.code or "-",
-            #     product_name,
-            #     item.size or "-",
-            #     str(item.quantity),
-            #     f"{item.product.price:.2f}",
-            #     f"{subtotal:.2f}"
-            # ])
-
             data.append([
                 str(serial_no),
-                img,                                # ✅ image cell
+                img,
                 item.product.code or "-",
                 product_name,
                 item.size or "-",
@@ -149,9 +141,9 @@ def checkout(request):
                 f"{subtotal:.2f}"
             ])
 
-
             total += subtotal
             serial_no += 1
+
 
 
         # --- Add Total Row ---
