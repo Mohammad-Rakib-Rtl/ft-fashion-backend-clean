@@ -102,27 +102,31 @@ def checkout(request):
         for item in order.items.all():
             subtotal = item.product.price * item.quantity
 
-            # ---------- FIXED IMAGE LOGIC ----------
             img = Paragraph("-", styles["Normal"])
 
             if item.product.image:
                 try:
                     image_url = item.product.image.url
 
-                    # Handle local /media/ URLs safely
                     if image_url.startswith("/media/"):
-                        image_path = os.path.join(settings.MEDIA_ROOT, image_url.replace("/media/products", ""))
+                        image_path = os.path.join(
+                            settings.MEDIA_ROOT,
+                            image_url.replace("/media/", "")
+                        )
+
                         if os.path.exists(image_path):
                             img = Image(image_path, width=0.7 * inch, height=0.7 * inch)
+                        else:
+                            print("IMAGE FILE NOT FOUND:", image_path)
+
                     else:
-                        # External URL (future-proof)
                         image_data = urlopen(image_url, timeout=5).read()
                         image_buffer = BytesIO(image_data)
                         img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
 
                 except Exception as e:
                     print("IMAGE LOAD ERROR:", e)
-            # ---------- END IMAGE LOGIC ----------
+
 
             product_name_text = item.product.name
             if len(product_name_text) > 60:
