@@ -102,30 +102,12 @@ def checkout(request):
         for item in order.items.all():
             subtotal = item.product.price * item.quantity
 
-            img = Paragraph("-", styles["Normal"])
-
-            if item.product.image:
-                try:
-                    image_url = item.product.image.url
-
-                    if image_url.startswith("/media/"):
-                        image_path = os.path.join(
-                            settings.MEDIA_ROOT,
-                            image_url.replace("/media/", "")
-                        )
-
-                        if os.path.exists(image_path):
-                            img = Image(image_path, width=0.7 * inch, height=0.7 * inch)
-                        else:
-                            print("IMAGE FILE NOT FOUND:", image_path)
-
-                    else:
-                        image_data = urlopen(image_url, timeout=5).read()
-                        image_buffer = BytesIO(image_data)
-                        img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
-
-                except Exception as e:
-                    print("IMAGE LOAD ERROR:", e)
+            # Product image cell
+            image_path = item.product.image.path if item.product.image else None
+            if image_path and os.path.exists(image_path):
+                img = Image(image_path, width=0.7*inch, height=0.7*inch)
+            else:
+                img = Paragraph("-", styles["Normal"])
 
 
             product_name_text = item.product.name
