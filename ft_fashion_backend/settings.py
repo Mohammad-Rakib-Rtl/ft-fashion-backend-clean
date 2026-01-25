@@ -1,4 +1,4 @@
-# settings.py - Updated version with proper Cloudinary configuration
+# settings.py - FINAL FIX
 
 from pathlib import Path
 import os
@@ -96,7 +96,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # --- CLOUDINARY CONFIGURATION ---
-# Make sure these are imported
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -105,6 +104,29 @@ import cloudinary.api
 CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
 CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
+
+# Validate Cloudinary credentials
+if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+    print("⚠️  Cloudinary credentials are missing!")
+    print(f"CLOUDINARY_CLOUD_NAME: {CLOUDINARY_CLOUD_NAME}")
+    print(f"CLOUDINARY_API_KEY: {CLOUDINARY_API_KEY}")
+    print(f"CLOUDINARY_API_SECRET: {CLOUDINARY_API_SECRET}")
+else:
+    print(f"✅ Cloudinary configured with cloud name: {CLOUDINARY_CLOUD_NAME}")
+
+# Configure Cloudinary
+try:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
+    print("✅ Cloudinary configured successfully")
+except Exception as e:
+    print(f"❌ Cloudinary configuration failed: {e}")
+
+# Set default file storage to Cloudinary
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Media files configuration
@@ -124,18 +146,3 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS") == "True"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
-
-# Add this to ensure Cloudinary is properly initialized
-def check_cloudinary_configuration():
-    """Check if Cloudinary is properly configured"""
-    try:
-        # Test Cloudinary connection
-        cloudinary_response = cloudinary.api.ping()
-        print(f"Cloudinary ping response: {cloudinary_response}")
-        return True
-    except Exception as e:
-        print(f"Cloudinary configuration error: {e}")
-        return False
-
-# Call this function to verify configuration
-check_cloudinary_configuration()

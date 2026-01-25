@@ -1,4 +1,4 @@
-# orders/views.py - Corrected version without undefined functions
+# orders/views.py - FINAL VERSION
 
 from urllib import response
 from rest_framework.decorators import api_view
@@ -172,40 +172,3 @@ def checkout(request):
         return response
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# Only add this test function if you want to test Cloudinary connection
-def test_cloudinary_connection(request):
-    """Test Cloudinary connection and configuration"""
-    try:
-        # Ping Cloudinary
-        ping_result = cloudinary.api.ping()
-        
-        # Get a sample product with image
-        from products.models import Product
-        product = Product.objects.first()
-        
-        image_url = None
-        is_cloudinary = False
-        
-        if product and product.image:
-            image_url = product.image.url
-            is_cloudinary = 'cloudinary' in image_url.lower() or 'res.cloudinary.com' in image_url.lower()
-        
-        return JsonResponse({
-            'success': True,
-            'ping_result': ping_result,
-            'image_url': image_url,
-            'is_cloudinary': is_cloudinary,
-            'message': 'Cloudinary connection successful'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-            'message': 'Cloudinary connection failed'
-        })
-
-
-# Add this import at the top of the file if you use the test function
-from django.http import JsonResponse
