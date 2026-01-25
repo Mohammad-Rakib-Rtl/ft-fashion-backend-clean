@@ -17,6 +17,10 @@ from dotenv import load_dotenv
 
 import cloudinary
 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 
 load_dotenv()
 
@@ -120,25 +124,6 @@ else:  # live PostgreSQL on Railway
         }
     }
 
-# DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': os.environ.get('DB_NAME'),
-#             'USER': os.environ.get('DB_USER'),
-#             'PASSWORD': os.environ.get('DB_PASSWORD'),
-#             'HOST': os.environ.get('DB_HOST'),
-#             'PORT': os.environ.get('DB_PORT'),
-#         }
-#     }
-
-# DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': BASE_DIR / 'db.sqlite3',
-#         }
-#     }
-
-
 
 
 # Password validation
@@ -166,6 +151,10 @@ INSTALLED_APPS += [
 ]
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+
+
+# Your existing Cloudinary configuration
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get("CLOUDINARY_CLOUD_NAME"),
@@ -203,8 +192,9 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/products/'
-MEDIA_ROOT = BASE_DIR / 'media' / 'products'
+MEDIA_URL = '/media/'  # keep simple, Cloudinary ignores this
+MEDIA_ROOT = BASE_DIR / 'media'  # not used, but Django expects it
+
 
 
 

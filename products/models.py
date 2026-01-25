@@ -31,3 +31,16 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def get_optimized_image_url(self):
+        """Return an optimized image URL for PDF generation"""
+        if self.image:
+            url = self.image.url
+            # Add Cloudinary transformation for PDF use
+            if "cloudinary" in url:
+                if "?" not in url:
+                    url += "?w=200&h=200&c_fill"
+                else:
+                    url += "&w=200&h=200&c_fill"
+            return url
+        return None

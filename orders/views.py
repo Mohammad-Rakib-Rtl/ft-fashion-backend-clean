@@ -1,4 +1,5 @@
-# ---- imports (top of file) ----
+# orders/views.py - Updated version with Cloudinary support
+
 from urllib import response
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -17,25 +18,16 @@ import os
 import requests
 from tempfile import NamedTemporaryFile
 from django.http import HttpResponse
-import requests
-import tempfile
+import logging
 
-from urllib.request import urlopen
-from io import BytesIO
-from reportlab.platypus import Image
-from reportlab.lib.units import inch
+logger = logging.getLogger(__name__)
 
-
-
-# ---- function begins here ----
 @api_view(['POST'])
 def checkout(request):
     serializer = CheckoutSerializer(data=request.data)
     if serializer.is_valid():
-        order = serializer.save()          # ✅ order is defined here
-
-        # --- inside your checkout(request) after order = serializer.save() ---
-
+        order = serializer.save()
+        
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
                                 leftMargin=50, rightMargin=50,
@@ -57,13 +49,6 @@ def checkout(request):
 
         # --- Order Info ---
         info_style = ParagraphStyle(name='Info', fontSize=11, leading=15, leftIndent=0)
-        # info_table_data = [[
-        #     Paragraph(f"<b>Order Code:</b> {order.code}", info_style)
-        # ], [
-        #     Paragraph(f"<b>Customer Email:</b> {order.customer_email}", info_style)
-        # ], [
-        #     Paragraph(f"<b>Total Items:</b> {order.items.count()}", info_style)
-        # ]]
         info_table_data = [
             [Paragraph(f"<b>Order Code:</b> {order.code}", info_style)],
             [Paragraph(f"<b>Customer Name:</b> {order.customer_name}", info_style)],
@@ -71,8 +56,6 @@ def checkout(request):
             [Paragraph(f"<b>Email:</b> {order.customer_email}", info_style)],
             [Paragraph(f"<b>Total Items:</b> {order.items.count()}", info_style)],
         ]
-
-
 
         info_table = Table(info_table_data, colWidths=[480])
         info_table.setStyle(TableStyle([
@@ -106,21 +89,24 @@ def checkout(request):
 
             if item.product.image:
                 try:
-                    image_url = item.product.image.url
-
-                    # Make absolute URL (CRITICAL)
-                    if image_url.startswith("/"):
-                        image_url = request.build_absolute_uri(image_url)
-
-                    image_data = urlopen(image_url, timeout=10).read()
-                    image_buffer = BytesIO(image_data)
-
-                    img = Image(image_buffer, width=0.7 * inch, height=0.7 * inch)
-
+                    # Get optimized image URL
+                    image_url = item.product.get_optimized_image_url()
+                    
+                    if image_url:
+                        # Make absolute URL if needed
+                        if image_url.startswith("/"):
+                            image_url = request.build_absolute_uri(image_url)
+                        
+                        # Download with timeout
+                        response = requests.get(image_url, timeout=15)
+                        response.raise_for_status()
+                        
+                        # Create image from bytes
+                        img = Image(BytesIO(response.content), width=0.7 * inch, height=0.7 * inch)
+                        
                 except Exception as e:
-                    print("IMAGE LOAD ERROR:", e)
-
-
+                    logger.error(f"Error loading image for product {item.product.name}: {e}")
+                    img = Paragraph("-", styles["Normal"])
 
             product_name_text = item.product.name
             if len(product_name_text) > 60:
@@ -142,12 +128,9 @@ def checkout(request):
             total += subtotal
             serial_no += 1
 
-
-
         # --- Add Total Row ---
         data.append(["", "", "", "", "", "", "Total:", f"{total:.2f} BDT"])
         
-
         # --- Table Style ---
         table = Table(data, colWidths=[30, 60, 60, 150, 40, 40, 80, 80])
         table_style = TableStyle([
@@ -169,30 +152,10 @@ def checkout(request):
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        # email = EmailMessage(
-        # subject=f"New Order Invoice #{order.code}",
-        # body="Please find attached the new client invoice.",
-        # from_email=settings.DEFAULT_FROM_EMAIL,
-        # to=["jwdjp.abc@gmail.com"],
-        # )
-        # email.attach(f"invoice_{order.code}.pdf", pdf_bytes, "application/pdf")
-        # # email.send(fail_silently=True)
-        # try:
-        #     email.send(fail_silently=True)
-        # except Exception as e:
-        #     print("EMAIL ERROR:", e)
         print("Checkout completed — email skipped to avoid worker timeout")
-
-
-        # return Response({
-        #     "message": "Order processed successfully.",
-        #     "order_code": str(order.code),
-        #     "pdf": pdf_bytes.hex()
-        # }, status=status.HTTP_201_CREATED)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="invoice_{order.code}.pdf"'
         return response
-
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
