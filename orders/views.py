@@ -1,4 +1,4 @@
-# orders/views.py - Updated version with better Cloudinary handling
+# orders/views.py - Corrected version without undefined functions
 
 from urllib import response
 from rest_framework.decorators import api_view
@@ -19,9 +19,6 @@ import requests
 from tempfile import NamedTemporaryFile
 from django.http import HttpResponse
 import logging
-import cloudinary
-
-from django.http import JsonResponse
 import cloudinary
 
 logger = logging.getLogger(__name__)
@@ -177,15 +174,12 @@ def checkout(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
+# Only add this test function if you want to test Cloudinary connection
 def test_cloudinary_connection(request):
     """Test Cloudinary connection and configuration"""
     try:
         # Ping Cloudinary
         ping_result = cloudinary.api.ping()
-        
-        # Get account info
-        account_info = cloudinary.api.account()
         
         # Get a sample product with image
         from products.models import Product
@@ -201,7 +195,6 @@ def test_cloudinary_connection(request):
         return JsonResponse({
             'success': True,
             'ping_result': ping_result,
-            'account_info': account_info,
             'image_url': image_url,
             'is_cloudinary': is_cloudinary,
             'message': 'Cloudinary connection successful'
@@ -212,3 +205,7 @@ def test_cloudinary_connection(request):
             'error': str(e),
             'message': 'Cloudinary connection failed'
         })
+
+
+# Add this import at the top of the file if you use the test function
+from django.http import JsonResponse
