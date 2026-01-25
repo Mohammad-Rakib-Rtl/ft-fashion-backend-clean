@@ -33,15 +33,22 @@ class Product(models.Model):
     def __str__(self):
         return self.name
     
-    def get_optimized_image_url(self):
-        """Return an optimized image URL for PDF generation"""
+    def get_image_url(self):
+        """Return the full Cloudinary URL for the image"""
         if self.image:
+            # Get the actual URL
             url = self.image.url
-            # Add Cloudinary transformation for PDF use
-            if "cloudinary" in url:
-                if "?" not in url:
-                    url += "?w=200&h=200&c_fill"
-                else:
-                    url += "&w=200&h=200&c_fill"
+            
+            # If it's a local path, construct the Cloudinary URL
+            if url.startswith('/media/'):
+                cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+                if cloud_name:
+                    filename = url.replace('/media/', '')
+                    return f"https://res.cloudinary.com/{cloud_name}/image/upload/{filename}"
+            
             return url
-        return None
+        
+        return ""
+
+    def __str__(self):
+        return self.name

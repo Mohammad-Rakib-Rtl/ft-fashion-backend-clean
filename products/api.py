@@ -1,6 +1,7 @@
+# products/api.py
 from rest_framework import viewsets
-from .models import Product, Category
-from .serializers import ProductSerializer, CategorySerializer
+from .models import Product
+from .serializers import ProductSerializer
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()

@@ -11,6 +11,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-5cjw(sz^j@g(j=r(zikoe(-g8kq0ahe8k9^a6xrmkwc$!1$um*'
 DEBUG = True
 
+
+
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
     "https://web-production-1f7f.up.railway.app",
@@ -32,6 +34,8 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
 ]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -108,9 +112,6 @@ CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
 # Validate Cloudinary credentials
 if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
     print("⚠️  Cloudinary credentials are missing!")
-    print(f"CLOUDINARY_CLOUD_NAME: {CLOUDINARY_CLOUD_NAME}")
-    print(f"CLOUDINARY_API_KEY: {CLOUDINARY_API_KEY}")
-    print(f"CLOUDINARY_API_SECRET: {CLOUDINARY_API_SECRET}")
 else:
     print(f"✅ Cloudinary configured with cloud name: {CLOUDINARY_CLOUD_NAME}")
 

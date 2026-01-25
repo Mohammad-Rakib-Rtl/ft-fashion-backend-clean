@@ -6,8 +6,20 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+
+
+
 class ProductSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'category', 'name', 'description', 'price', 'image', 'code', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        # Ensure we return the full Cloudinary URL for the image
+        if instance.image:
+            representation['image'] = instance.get_image_url()
+        
+        return representation
