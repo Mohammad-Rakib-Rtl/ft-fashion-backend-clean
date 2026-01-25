@@ -1,4 +1,4 @@
-# orders/views.py - FINAL VERSION
+# orders/views.py - ONLY THE CHECKOUT FUNCTION
 
 from urllib import response
 from rest_framework.decorators import api_view

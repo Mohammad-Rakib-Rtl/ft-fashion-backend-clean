@@ -14,7 +14,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/checkout/', checkout),
-    path('test-cloudinary-connection/', test_cloudinary_connection),  # Only if you added the function
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
