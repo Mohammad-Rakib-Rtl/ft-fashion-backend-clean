@@ -1,6 +1,7 @@
 # backend/products/models.py
 import random
 from django.db import models
+from cloudinary.models import CloudinaryField
 
 class Category(models.Model):
     name = models.CharField(max_length=50)
@@ -14,7 +15,7 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
-    image = models.ImageField(upload_to='products/')
+    image = CloudinaryField('image')
     code = models.CharField(max_length=10, unique=True, editable=False, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
