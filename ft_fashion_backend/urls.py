@@ -5,7 +5,7 @@ from rest_framework import routers
 from products.api import ProductViewSet
 from django.conf import settings
 from django.conf.urls.static import static
-from orders.views import checkout, test_cloudinary_connection  # Only import what exists
+from orders.views import checkout  # Only import what exists
 
 router = routers.DefaultRouter()
 router.register(r'products', ProductViewSet)
