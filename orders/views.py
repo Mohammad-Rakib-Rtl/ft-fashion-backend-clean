@@ -1,4 +1,4 @@
-# orders/views.py - Updated version with proper Cloudinary handling
+# orders/views.py - Updated version with better Cloudinary handling
 
 from urllib import response
 from rest_framework.decorators import api_view
@@ -20,12 +20,9 @@ from tempfile import NamedTemporaryFile
 from django.http import HttpResponse
 import logging
 import cloudinary
-import cloudinary.api
-import cloudinary.uploader
 
-# In your views.py or create a new test view
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+import cloudinary
 
 logger = logging.getLogger(__name__)
 
@@ -96,48 +93,35 @@ def checkout(request):
 
             if item.product.image:
                 try:
-                    # Get the actual Cloudinary URL
+                    # Get the image URL
                     image_url = item.product.image.url
                     
-                    # If it's still returning a local path, force it to be absolute
-                    if image_url.startswith('/'):
-                        # Try to construct the full URL
-                        base_url = request.build_absolute_uri('/')
-                        image_url = base_url.rstrip('/') + image_url
-                    
-                    # For Cloudinary, add transformation parameters for better performance
-                    if "cloudinary" not in image_url and "res.cloudinary.com" not in image_url:
-                        # This means we have a local path - try to get the actual Cloudinary URL
-                        # You might need to regenerate the URL or check your Cloudinary configuration
-                        logger.warning(f"Image URL doesn't look like Cloudinary: {image_url}")
+                    # If it's a local path, try to construct the Cloudinary URL
+                    if image_url.startswith('/media/'):
+                        # Extract filename
+                        filename = image_url.replace('/media/', '')
                         
-                        # As a fallback, try to use the Cloudinary API to get the public ID
-                        # This is a workaround - ideally your image.url should return a Cloudinary URL
+                        # Construct Cloudinary URL using your Cloudinary configuration
+                        cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+                        if cloud_name:
+                            # Try to create a Cloudinary URL
+                            image_url = f"https://res.cloudinary.com/{cloud_name}/image/upload/{filename}"
+                    
+                    # Make sure we have a valid URL
+                    if not image_url.startswith('http'):
+                        # If still not valid, use a placeholder
+                        logger.warning(f"Invalid image URL: {image_url}")
+                        img = Paragraph("-", styles["Normal"])
+                    else:
+                        # Download with timeout
+                        response = requests.get(image_url, timeout=30)
+                        response.raise_for_status()
                         
-                        # Try to extract the filename and construct a Cloudinary URL
-                        if image_url.startswith('/media/'):
-                            filename = image_url.replace('/media/', '')
-                            # Construct Cloudinary URL based on your configuration
-                            # This is specific to your Cloudinary setup
-                            image_url = f"https://res.cloudinary.com/{os.environ.get('CLOUDINARY_CLOUD_NAME')}/image/upload/{filename}"
-                    
-                    # Add Cloudinary transformation for PDF use (smaller size, faster loading)
-                    if "cloudinary" in image_url or "res.cloudinary.com" in image_url:
-                        if "?" not in image_url:
-                            image_url += "?w=200&h=200&c_fill"
-                        else:
-                            image_url += "&w=200&h=200&c_fill"
-                    
-                    # Download with longer timeout
-                    response = requests.get(image_url, timeout=30)
-                    response.raise_for_status()
-                    
-                    # Create image from bytes
-                    img = Image(BytesIO(response.content), width=0.7 * inch, height=0.7 * inch)
-                    
+                        # Create image from bytes
+                        img = Image(BytesIO(response.content), width=0.7 * inch, height=0.7 * inch)
+                        
                 except Exception as e:
                     logger.error(f"Error loading image for product {item.product.name}: {e}")
-                    # Keep the placeholder if image fails to load
                     img = Paragraph("-", styles["Normal"])
 
             product_name_text = item.product.name
@@ -194,30 +178,37 @@ def checkout(request):
 
 
 
-@require_http_methods(["GET"])
-def test_cloudinary(request):
-    """Test Cloudinary configuration"""
+def test_cloudinary_connection(request):
+    """Test Cloudinary connection and configuration"""
     try:
-        # Get a sample product with an image
+        # Ping Cloudinary
+        ping_result = cloudinary.api.ping()
+        
+        # Get account info
+        account_info = cloudinary.api.account()
+        
+        # Get a sample product with image
         from products.models import Product
         product = Product.objects.first()
         
+        image_url = None
+        is_cloudinary = False
+        
         if product and product.image:
             image_url = product.image.url
-            return JsonResponse({
-                'success': True,
-                'image_url': image_url,
-                'is_cloudinary': 'cloudinary' in image_url.lower(),
-                'message': 'Cloudinary appears to be working'
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'message': 'No products found with images'
-            })
+            is_cloudinary = 'cloudinary' in image_url.lower() or 'res.cloudinary.com' in image_url.lower()
+        
+        return JsonResponse({
+            'success': True,
+            'ping_result': ping_result,
+            'account_info': account_info,
+            'image_url': image_url,
+            'is_cloudinary': is_cloudinary,
+            'message': 'Cloudinary connection successful'
+        })
     except Exception as e:
         return JsonResponse({
             'success': False,
             'error': str(e),
-            'message': 'Cloudinary configuration test failed'
+            'message': 'Cloudinary connection failed'
         })
