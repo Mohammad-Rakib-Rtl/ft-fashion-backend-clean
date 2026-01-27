@@ -68,7 +68,7 @@ def checkout(request):
         elements.append(Spacer(1, 12))
 
         # --- Table Header ---
-        data = [["SL", "Image", "Code", "Product Name", "Size", "Quantity", "Unit Price", "TOTAL"]]
+        data = [["SL", "Image", "Code", "Size", "Quantity", "Unit Price", "TOTAL"]]
 
         # --- Table Content ---
         total = 0
@@ -142,7 +142,7 @@ def checkout(request):
             serial_no += 1
 
         # --- Add Total Row ---
-        data.append(["", "", "", "", "", "", "Total:", f"{total:.2f} BDT"])
+        data.append(["", "", "", "", "", "Total:", f"{total:.2f} BDT"])
         
         # --- Table Style ---
         table = Table(data, colWidths=[30, 60, 60, 150, 40, 40, 80, 80])
