@@ -12,7 +12,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(blank=True, null=True)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     image = CloudinaryField('image')
@@ -31,8 +31,7 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        # ✅ SAFE even when name is empty
-        return self.name or f"Product #{self.id}"
+        return self.name or f"Product #{self.id or 'new'}"
     
     def get_image_url(self):
         """Return the full Cloudinary URL for the image"""
