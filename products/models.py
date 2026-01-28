@@ -19,7 +19,7 @@ class Product(models.Model):
     code = models.CharField(max_length=10, unique=True, editable=False, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-
+    #fixing my latest bug
     def save(self, *args, **kwargs):
         if not self.code:
             new_code = None
