@@ -4,6 +4,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+# --- CLOUDINARY CONFIGURATION ---
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -99,10 +104,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- CLOUDINARY CONFIGURATION ---
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+
 
 # Get Cloudinary credentials from environment variables
 CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
