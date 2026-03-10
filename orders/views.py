@@ -121,7 +121,7 @@ def checkout(request):
                     logger.error(f"Error loading image for product {item.product.name}: {e}")
                     img = Paragraph("-", styles["Normal"])
 
-            product_name_text = item.product.name
+            product_name_text = item.product.name or item.product.code
             if len(product_name_text) > 60:
                 product_name_text = product_name_text[:57] + "..."
 
