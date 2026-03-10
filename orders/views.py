@@ -25,29 +25,9 @@ logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 def checkout(request):
-    # === DEBUG LOGS START ===
-    logger.info("🔍 [CHECKOUT] Function called")
-    logger.info(f"🔍 [CHECKOUT] Request method: {request.method}")
-    logger.info(f"🔍 [CHECKOUT] Request  {request.data}")
-    logger.info(f"🔍 [CHECKOUT] CLOUDINARY_CLOUD_NAME env: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
-    # === DEBUG LOGS END ===
-
     serializer = CheckoutSerializer(data=request.data)
-    
-    # === DEBUG LOGS START ===
-    if not serializer.is_valid():
-        logger.error(f"❌ [CHECKOUT] Serializer errors: {serializer.errors}")
-    else:
-        logger.info("✅ [CHECKOUT] Serializer is valid")
-    # === DEBUG LOGS END ===
-    
     if serializer.is_valid():
         order = serializer.save()
-        
-        # === DEBUG LOGS START ===
-        logger.info(f"✅ [CHECKOUT] Order saved: code={order.code}, customer={order.customer_name}")
-        logger.info(f"✅ [CHECKOUT] Order items count: {order.items.count()}")
-        # === DEBUG LOGS END ===
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
@@ -99,15 +79,11 @@ def checkout(request):
             name="ProductName",
             fontSize=10,
             leading=12,
-            alignment=0,  # left align
-            wordWrap="CJK",  # ensures word wrapping works properly
+            alignment=0,
+            wordWrap="CJK",
         )
 
         for item in order.items.all():
-            # === DEBUG LOGS START ===
-            logger.info(f"📦 [ITEM] Processing: product_id={item.product.id if item.product else 'None'}")
-            # === DEBUG LOGS END ===
-            
             subtotal = item.product.price * item.quantity
 
             img = Paragraph("-", styles["Normal"])
@@ -117,10 +93,6 @@ def checkout(request):
                     # Get the image URL
                     image_url = item.product.image.url
                     
-                    # === DEBUG LOGS START ===
-                    logger.info(f"🖼️ [IMAGE] Original image_url: {image_url}")
-                    # === DEBUG LOGS END ===
-                    
                     # If it's a local path, try to construct the Cloudinary URL
                     if image_url.startswith('/media/'):
                         # Extract filename
@@ -128,19 +100,9 @@ def checkout(request):
                         
                         # Construct Cloudinary URL using your Cloudinary configuration
                         cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
-                        
-                        # === DEBUG LOGS START ===
-                        logger.info(f"🖼️ [IMAGE] Filename: {filename}")
-                        logger.info(f"🖼️ [IMAGE] Cloud name from env: {cloud_name}")
-                        # === DEBUG LOGS END ===
-                        
                         if cloud_name:
-                            # Try to create a Cloudinary URL
-                            image_url = f"https://res.cloudinary.com/  {cloud_name}/image/upload/{filename}"
-                            # === DEBUG LOGS START ===
-                            logger.info(f"🖼️ [IMAGE] Constructed Cloudinary URL: '{image_url}'")
-                            logger.warning(f"⚠️ [IMAGE] URL contains spaces! This will cause download to fail.")
-                            # === DEBUG LOGS END ===
+                            # ✅ FIXED: Removed extra spaces in URL
+                            image_url = f"https://res.cloudinary.com/{cloud_name}/image/upload/{filename}"
                     
                     # Make sure we have a valid URL
                     if not image_url.startswith('http'):
@@ -148,39 +110,19 @@ def checkout(request):
                         logger.warning(f"Invalid image URL: {image_url}")
                         img = Paragraph("-", styles["Normal"])
                     else:
-                        # === DEBUG LOGS START ===
-                        logger.info(f"🖼️ [IMAGE] Attempting to download from: {image_url}")
-                        # === DEBUG LOGS END ===
-                        
                         # Download with timeout
                         response = requests.get(image_url, timeout=30)
                         response.raise_for_status()
                         
                         # Create image from bytes
                         img = Image(BytesIO(response.content), width=0.7 * inch, height=0.7 * inch)
-                        # === DEBUG LOGS START ===
-                        logger.info(f"✅ [IMAGE] Successfully loaded image")
-                        # === DEBUG LOGS END ===
                         
                 except Exception as e:
                     logger.error(f"Error loading image for product {item.product.name}: {e}")
                     img = Paragraph("-", styles["Normal"])
-                    # === DEBUG LOGS START ===
-                    logger.warning(f"⚠️ [IMAGE] Using placeholder due to error")
-                    # === DEBUG LOGS END ===
 
-            # === DEBUG LOGS START ===
-            logger.info(f"📝 [NAME] Raw name: '{item.product.name}', code: '{item.product.code}'")
-            # === DEBUG LOGS END ===
-            
-            product_name_text = item.product.name or item.product.code
-            
-            # === DEBUG LOGS START ===
-            logger.info(f"📝 [NAME] After fallback: '{product_name_text}'")
-            if product_name_text is None:
-                logger.error(f"❌ [NAME] product_name_text is None! This will crash on len()")
-            # === DEBUG LOGS END ===
-            
+            # ✅ FIXED: Safe handling when both name and code are missing
+            product_name_text = item.product.name or item.product.code or "Product"
             if len(product_name_text) > 60:
                 product_name_text = product_name_text[:57] + "..."
 
@@ -219,33 +161,15 @@ def checkout(request):
         table.setStyle(table_style)
 
         elements.append(table)
-        
-        # === DEBUG LOGS START ===
-        logger.info("📄 [PDF] Building PDF document...")
-        # === DEBUG LOGS END ===
-        
         doc.build(elements)
 
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
-        # === DEBUG LOGS START ===
-        logger.info(f"✅ [PDF] PDF generated, size: {len(pdf_bytes)} bytes")
-        # === DEBUG LOGS END ===
-
         print("Checkout completed — email skipped to avoid worker timeout")
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="invoice_{order.code}.pdf"'
-        
-        # === DEBUG LOGS START ===
-        logger.info(f"✅ [CHECKOUT] Returning PDF response for order {order.code}")
-        # === DEBUG LOGS END ===
-        
         return response
 
-    # === DEBUG LOGS START ===
-    logger.error(f"❌ [CHECKOUT] Returning 400 - serializer errors: {serializer.errors}")
-    # === DEBUG LOGS END ===
-    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
